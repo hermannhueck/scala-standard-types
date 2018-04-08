@@ -255,18 +255,30 @@ class CListSpec extends FlatSpec with Matchers with PropertyChecks {
     }
   }
 
+  "CList.flattenOld" should "flatten a CList of CLists, but fail if the CList contains elements other than CLists" in {
+    // flatten1() can flatten a CList[CList[String]] into a CList[String]
+    CList(CList("Scala"), CList("is"), CList("fun")).flattenOld shouldEqual CList("Scala", "is", "fun")
+    // flatten1() cannot flatten  a CList[String]
+    the[IllegalStateException] thrownBy CList("Scala", "is", "fun").flattenOld should have message "CList cannot be flattened, it is not a CList of CLists."
+  }
+
   "CList.flatten" should "flatten a CList of CLists, but fail if the CList contains elements other than CLists" in {
-    // flatten() can flatten a CList[CList[String]] into a CList[String]
+    // flatten() can flatten a CList[CList[ELEM]] into a CList[ELEM]
     CList(CList("Scala"), CList("is"), CList("fun")).flatten shouldEqual CList("Scala", "is", "fun")
-    // flatten() cannot flatten  a CList[String]
-    the[IllegalStateException] thrownBy CList("Scala", "is", "fun").flatten should have message "CList cannot be flattened, it is not a CList of CLists."
+    CList(CList(1, 2), CList(3), CList(4, 5, 6)).flatten shouldEqual CList(1, 2, 3, 4, 5, 6)
+  }
+
+  "CList.concatOld" should "concatenate a List of CLists into one CList, but fail if the CList contains elements other than CLists" in {
+    val clistOfCLists = CList(CList(1, 2, 3), CList(4, 5), CList(11, 12, 13))
+    clistOfCLists.concatOld shouldEqual CList(1, 2, 3, 4, 5, 11, 12, 13)
+    CList(CList("Scala", "is"), CList("great", "fun"), CList(".")).concatOld shouldEqual CList("Scala", "is", "great", "fun", ".")
+    the[IllegalStateException] thrownBy CList("Scala", "is", "fun").concatOld should have message "CList cannot be flattened, it is not a CList of CLists."
   }
 
   "CList.concat" should "concatenate a List of CLists into one CList, but fail if the CList contains elements other than CLists" in {
     val clistOfCLists = CList(CList(1, 2, 3), CList(4, 5), CList(11, 12, 13))
     clistOfCLists.concat shouldEqual CList(1, 2, 3, 4, 5, 11, 12, 13)
     CList(CList("Scala", "is"), CList("great", "fun"), CList(".")).concat shouldEqual CList("Scala", "is", "great", "fun", ".")
-    the[IllegalStateException] thrownBy CList("Scala", "is", "fun").concat should have message "CList cannot be flattened, it is not a CList of CLists."
   }
 
   "CList.foldRight" should "return the expected result of the right fold catamorphism" in {

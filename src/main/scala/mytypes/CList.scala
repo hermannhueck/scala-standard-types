@@ -130,19 +130,27 @@ sealed trait CList[+A] {
   // bind is an alias for flatMap
   def bind[B](f: A => CList[B]): CList[B] = flatMap(f)
 
-  def flatten: CList[Any] = { // flattens a CList of CLists
-    val id = (elem: Any) => elem.asInstanceOf[CList[A]] // id with a cast
+  def flattenOld: CList[Any] = { // flattens a CList of CLists, but looses type information
+    val id = (elem: Any) => elem.asInstanceOf[CList[A]] // id with a cast!!! AWFUL!!!
     this match {
       case Nil =>
         Nil
       case Cons(h, _) if h.isInstanceOf[CList[Any]] =>
         flatMap(id) // recursive: h ++ tail.flatten
-      case _ =>
+      case _ => // compiles, but throws Exception at runtime!!! AWFUL!!!
         throw new IllegalStateException("CList cannot be flattened, it is not a CList of CLists.")
     }
   }
 
-  def concat: CList[Any] = flatten
+  def flatten[E](implicit ev: A <:< CList[E]): CList[E] = { // flattens a CList of CLists and retains type information
+    this match { // no casts necessary in this implementation
+      case Nil => CList.empty[E]
+      case Cons(_, _) => flatMap(identity(_)) // identity ~= elem => elem
+    }
+  }
+
+  def concatOld: CList[Any] = flattenOld
+  def concat[E](implicit ev: A <:< CList[E]): CList[E] = flatten
 
   def takeWhile(p: A => Boolean): CList[A] = this match {
     case Nil => Nil
