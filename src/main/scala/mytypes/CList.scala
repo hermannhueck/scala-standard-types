@@ -35,13 +35,13 @@ object CList {
 
 sealed trait CList[+A] {
 
-  def isEmpty: Boolean
-
-  def nonEmpty: Boolean = !isEmpty
-
   def head: A
 
   def tail: CList[A]
+
+  def isEmpty: Boolean
+
+  def nonEmpty: Boolean = !isEmpty
 
   def headOption: Option[A] = if (isEmpty) None else Some(head)
 
@@ -64,28 +64,38 @@ sealed trait CList[+A] {
 
   def fold[B >: A](zero: B)(op: (B, B) ⇒ B): B = foldRight(zero)(op)
 
-  def reduceRight[B >: A](op: (A, B) ⇒ B): B = {
+  def reduceRightOption[B >: A](op: (A, B) ⇒ B): Option[B] = {
 
     def go(xs: CList[A], op: (A, B) ⇒ B, acc: B): B =
       if (xs.isEmpty) acc
       else op(xs.head, go(xs.tail, op, acc))
 
-    if (this.isEmpty)
-      throw new UnsupportedOperationException("operation not supported on empty CList")
-    else
-      go(tail, op, head)
+    this match {
+      case Nil => None
+      case _ => Some(go(tail, op, head))
+    }
   }
 
-  def reduceLeft[B >: A](op: (B, A) ⇒ B): B = {
+  def reduceRight[B >: A](op: (A, B) ⇒ B): B = reduceRightOption(op) match {
+    case None => throw new UnsupportedOperationException("operation not supported on empty CList")
+    case Some(value) => value
+  }
+
+  def reduceLeftOption[B >: A](op: (B, A) ⇒ B): Option[B] = {
 
     def go(xs: CList[A], op: (B, A) ⇒ B, acc: B): B =
       if (xs.isEmpty) acc
       else op(go(xs.tail, op, acc), xs.head)
 
-    if (this.isEmpty)
-      throw new UnsupportedOperationException("operation not supported on empty CList")
-    else
-      go(tail, op, head)
+    this match {
+      case Nil => None
+      case _ => Some(go(tail, op, head))
+    }
+  }
+
+  def reduceLeft[B >: A](op: (B, A) ⇒ B): B = reduceLeftOption(op) match {
+    case None => throw new UnsupportedOperationException("operation not supported on empty CList")
+    case Some(value) => value
   }
 
   def reduce[B >: A](op: (B, B) ⇒ B): B = reduceRight(op)
@@ -115,7 +125,7 @@ sealed trait CList[+A] {
 
   // recursive impl: ... = if (p(head)) Cons(head, tail.filter(p)) else tail.filter(p)
   def filter(p: A => Boolean): CList[A] =
-    foldRight(CList[A]())((elem, acc) => if (p(elem)) Cons(elem, acc) else acc)
+    foldRight(CList.empty[A])((elem, acc) => if (p(elem)) Cons(elem, acc) else acc)
 
   def filterNot(p: A => Boolean): CList[A] = filter(!p(_))
 
@@ -192,6 +202,7 @@ sealed trait CList[+A] {
   def zip[B](that: CList[B]): CList[(A, B)] = zipWith(that)((_, _))
 
   def zipWithIndex: CList[(A, Int)] = {
+
     def go(clist: CList[A], index: Int): CList[(A, Int)] = clist match {
       case Nil => Nil
       case Cons(head, tail) => Cons((head, index), go(tail, index + 1))
@@ -210,15 +221,11 @@ sealed trait CList[+A] {
 }
 
 case object Nil extends CList[Nothing] {
-
   override def isEmpty: Boolean = true
-
   override def head = throw new NoSuchElementException("head of empty CList")
-
   override def tail = throw new NoSuchElementException("tail of empty CList")
 }
 
 final case class Cons[+A](head: A, tail: CList[A]) extends CList[A] {
-
   override def isEmpty: Boolean = false
 }

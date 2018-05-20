@@ -314,6 +314,13 @@ class CListSpec extends FlatSpec with Matchers with PropertyChecks {
     CList(1, 2, 3, 4, 5).fold(1)(_ * _) shouldEqual 120
   }
 
+  "CList.reduceRightOption" should "return the expected result of right reducing a non-empty CList as an Option" in {
+    CList[Int]().reduceRightOption(_: (Int, Int) => Int) shouldEqual None
+    CList(1, 2, 3, 4, 5).reduceRightOption((_, acc) => 1 + acc) shouldEqual Some(5)
+    CList(1, 2, 3, 4, 5).reduceRightOption(_ + _) shouldEqual Some(15)
+    CList(1, 2, 3, 4, 5).reduceRightOption(_ * _) shouldEqual Some(120)
+  }
+
   "CList.reduceRight" should "return the expected result of right reducing a non-empty CList" in {
     the[UnsupportedOperationException] thrownBy CList[Int]().reduceRight(_: (Int, Int) => Int) should have message "operation not supported on empty CList"
     CList(1, 2, 3, 4, 5).reduceRight((_, acc) => 1 + acc) shouldEqual 5 // length
@@ -321,9 +328,16 @@ class CListSpec extends FlatSpec with Matchers with PropertyChecks {
     CList(1, 2, 3, 4, 5).reduceRight(_ * _) shouldEqual 120 // product
   }
 
+  "CList.reduceLeftOption" should "return the expected result of left reducing a non-empty CList as an Option" in {
+    CList[Int]().reduceLeftOption(_: (Int, Int) => Int) shouldEqual None
+    CList(1, 2, 3, 4, 5).reduceLeftOption((acc, _) => 1 + acc) shouldEqual Some(5)
+    CList(1, 2, 3, 4, 5).reduceLeftOption(_ + _) shouldEqual Some(15)
+    CList(1, 2, 3, 4, 5).reduceLeftOption(_ * _) shouldEqual Some(120)
+  }
+
   "CList.reduceLeft" should "return the expected result of left reducing a non-empty CList" in {
     the[UnsupportedOperationException] thrownBy CList[Int]().reduceLeft(_: (Int, Int) => Int) should have message "operation not supported on empty CList"
-    CList(1, 2, 3, 4, 5).reduceLeft((acc, _) => 1 + acc) shouldEqual 5
+    CList(1, 2, 3, 4, 5).reduceLeft((acc, _) => 1 + acc) shouldEqual 5 // length
     CList(1, 2, 3, 4, 5).reduceLeft(_ + _) shouldEqual 15 // sum
     CList(1, 2, 3, 4, 5).reduceLeft(_ * _) shouldEqual 120 // product
   }
