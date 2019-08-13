@@ -24,11 +24,11 @@ object CList {
     else
       Cons(as.head, apply(as.tail: _*))
 
-  def fromList[A](list: List[A]) = apply(list: _*)
+  def fromList[A](list: List[A]): CList[A] = apply(list: _*)
 
-  def fromSeq[A](seq: Seq[A]) = apply(seq: _*)
+  def fromSeq[A](seq: Seq[A]): CList[A] = apply(seq: _*)
 
-  def fromSet[A](set: Set[A]) = apply(set.toSeq: _*)
+  def fromSet[A](set: Set[A]): CList[A] = apply(set.toSeq: _*)
 
   def empty[A]: CList[A] = CList[A]()
 }
@@ -52,21 +52,21 @@ sealed trait CList[+A] {
 
   def ++[B >: A](other: CList[B]): CList[B] = append(other) // ++ is an alias for append
 
-  def foldRight[B](acc: B)(op: (A, B) ⇒ B): B = this match {
+  def foldRight[B](acc: B)(op: (A, B) => B): B = this match {
     case Nil => acc
     case Cons(h, t) => op(h, t.foldRight(acc)(op))
   }
 
-  def foldLeft[B](acc: B)(op: (B, A) ⇒ B): B = this match {
+  def foldLeft[B](acc: B)(op: (B, A) => B): B = this match {
     case Nil => acc
     case Cons(h, t) => op(t.foldLeft(acc)(op), h)
   }
 
-  def fold[B >: A](zero: B)(op: (B, B) ⇒ B): B = foldRight(zero)(op)
+  def fold[B >: A](zero: B)(op: (B, B) => B): B = foldRight(zero)(op)
 
-  def reduceRightOption[B >: A](op: (A, B) ⇒ B): Option[B] = {
+  def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = {
 
-    def go(xs: CList[A], op: (A, B) ⇒ B, acc: B): B =
+    def go(xs: CList[A], op: (A, B) => B, acc: B): B =
       if (xs.isEmpty) acc
       else op(xs.head, go(xs.tail, op, acc))
 
@@ -76,14 +76,14 @@ sealed trait CList[+A] {
     }
   }
 
-  def reduceRight[B >: A](op: (A, B) ⇒ B): B = reduceRightOption(op) match {
+  def reduceRight[B >: A](op: (A, B) => B): B = reduceRightOption(op) match {
     case None => throw new UnsupportedOperationException("operation not supported on empty CList")
     case Some(value) => value
   }
 
-  def reduceLeftOption[B >: A](op: (B, A) ⇒ B): Option[B] = {
+  def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = {
 
-    def go(xs: CList[A], op: (B, A) ⇒ B, acc: B): B =
+    def go(xs: CList[A], op: (B, A) => B, acc: B): B =
       if (xs.isEmpty) acc
       else op(go(xs.tail, op, acc), xs.head)
 
@@ -93,12 +93,12 @@ sealed trait CList[+A] {
     }
   }
 
-  def reduceLeft[B >: A](op: (B, A) ⇒ B): B = reduceLeftOption(op) match {
+  def reduceLeft[B >: A](op: (B, A) => B): B = reduceLeftOption(op) match {
     case None => throw new UnsupportedOperationException("operation not supported on empty CList")
     case Some(value) => value
   }
 
-  def reduce[B >: A](op: (B, B) ⇒ B): B = reduceRight(op)
+  def reduce[B >: A](op: (B, B) => B): B = reduceRight(op)
 
   def length: Int = foldRight(0)((_, acc) => 1 + acc)
 
@@ -108,11 +108,12 @@ sealed trait CList[+A] {
 
   def contains[B >: A](elem: B): Boolean = exists(_ == elem)
 
-  def exists(p: (A) ⇒ Boolean): Boolean = foldRight(false)((elem, found) => if (found) true else p(elem))
+  def exists(p: (A) => Boolean): Boolean = foldRight(false)((elem, found) => if (found) true else p(elem))
 
-  def forall(p: (A) ⇒ Boolean): Boolean = !exists(p(_) == false)
+  def forall(p: (A) => Boolean): Boolean = !exists(p(_) == false)
 
   def reverse: CList[A] = {
+    @scala.annotation.tailrec
     def reverse(clist: CList[A], acc: CList[A]): CList[A] = clist match {
       case Nil => acc
       case Cons(head, tail) => reverse(tail, Cons(head, acc))
@@ -191,7 +192,7 @@ sealed trait CList[+A] {
   // you may loose the order of the elements when going to a Set
   def toSet[B >: A]: Set[B] = toList.toSet
 
-  def foreach(f: A ⇒ Unit): Unit = reverse.map(f)
+  def foreach(f: A => Unit): Unit = reverse.map(f)
 
   def zipWith[B, C](that: CList[B])(f: (A, B) => C): CList[C] = (this, that) match {
     case (Nil, _) => Nil
